@@ -1,0 +1,41 @@
+[1.079s] Invoking command in '/home/yhc23/PROJECT/ROS2_demo_ws/src/blade_demo_basics': PYTHONPATH=/home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/blade_demo_basics build --build-base /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/build install --record /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/install.log --single-version-externally-managed install_data
+[1.325s] running egg_info
+[1.326s] creating ../../build/blade_demo_basics/blade_demo_basics.egg-info
+[1.344s] writing ../../build/blade_demo_basics/blade_demo_basics.egg-info/PKG-INFO
+[1.344s] writing dependency_links to ../../build/blade_demo_basics/blade_demo_basics.egg-info/dependency_links.txt
+[1.345s] writing entry points to ../../build/blade_demo_basics/blade_demo_basics.egg-info/entry_points.txt
+[1.345s] writing requirements to ../../build/blade_demo_basics/blade_demo_basics.egg-info/requires.txt
+[1.345s] writing top-level names to ../../build/blade_demo_basics/blade_demo_basics.egg-info/top_level.txt
+[1.345s] writing manifest file '../../build/blade_demo_basics/blade_demo_basics.egg-info/SOURCES.txt'
+[1.381s] reading manifest file '../../build/blade_demo_basics/blade_demo_basics.egg-info/SOURCES.txt'
+[1.382s] writing manifest file '../../build/blade_demo_basics/blade_demo_basics.egg-info/SOURCES.txt'
+[1.382s] running build
+[1.382s] running build_py
+[1.382s] creating /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/build
+[1.383s] creating /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/build/lib
+[1.383s] creating /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/build/lib/blade_demo_basics
+[1.384s] copying blade_demo_basics/__init__.py -> /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/build/lib/blade_demo_basics
+[1.384s] copying blade_demo_basics/status_publisher.py -> /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/build/lib/blade_demo_basics
+[1.384s] copying blade_demo_basics/status_subscriber.py -> /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/build/lib/blade_demo_basics
+[1.385s] running install
+[1.390s] running install_lib
+[1.409s] creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/python3.12/site-packages/blade_demo_basics
+[1.410s] copying /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/build/lib/blade_demo_basics/__init__.py -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/python3.12/site-packages/blade_demo_basics
+[1.410s] copying /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/build/lib/blade_demo_basics/status_publisher.py -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/python3.12/site-packages/blade_demo_basics
+[1.410s] copying /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/build/lib/blade_demo_basics/status_subscriber.py -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/python3.12/site-packages/blade_demo_basics
+[1.411s] byte-compiling /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/python3.12/site-packages/blade_demo_basics/__init__.py to __init__.cpython-312.pyc
+[1.411s] byte-compiling /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/python3.12/site-packages/blade_demo_basics/status_publisher.py to status_publisher.cpython-312.pyc
+[1.412s] byte-compiling /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/python3.12/site-packages/blade_demo_basics/status_subscriber.py to status_subscriber.cpython-312.pyc
+[1.412s] running install_data
+[1.413s] creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/share/ament_index
+[1.413s] creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/share/ament_index/resource_index
+[1.413s] creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/share/ament_index/resource_index/packages
+[1.414s] copying resource/blade_demo_basics -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/share/ament_index/resource_index/packages
+[1.414s] copying package.xml -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/share/blade_demo_basics
+[1.414s] running install_egg_info
+[1.434s] Copying ../../build/blade_demo_basics/blade_demo_basics.egg-info to /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/python3.12/site-packages/blade_demo_basics-0.0.0-py3.12.egg-info
+[1.435s] running install_scripts
+[1.561s] Installing status_publisher script to /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/blade_demo_basics
+[1.562s] Installing status_subscriber script to /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/blade_demo_basics
+[1.562s] writing list of installed files to '/home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/install.log'
+[1.590s] Invoked command in '/home/yhc23/PROJECT/ROS2_demo_ws/src/blade_demo_basics' returned '0': PYTHONPATH=/home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/blade_demo_basics build --build-base /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/build install --record /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/install.log --single-version-externally-managed install_data

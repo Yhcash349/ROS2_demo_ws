@@ -1,0 +1,3 @@
+[console_scripts]
+status_publisher = blade_demo_basics.status_publisher:main
+status_subscriber = blade_demo_basics.status_subscriber:main

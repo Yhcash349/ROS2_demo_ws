@@ -124,3 +124,87 @@
 
 - Day 2 需要继续用 `ros2 topic list`、`ros2 topic info -v`、`ros2 service list`、`ros2 action list`、`ros2 param list` 主动观察通信接口。
 - 后续建议补充一张 `turtlesim` 运行截图或命令输出，作为 Day 1 可检查证据。
+
+## 2026-06-15 Day 2：ROS2 通信模型与 TurtleSim 观察清单
+
+### 对应计划
+
+对应 `DOCS/PLAN.md` 的 Stage 1：ROS2 基础入口，以及 Day 2：ROS2 通信模型。今天目标是继续以 `turtlesim` 为例，观察 topic、service、action、parameter 四类通信接口，并补齐发布/订阅、feedback、result、cancel 和 YAML 参数文件格式的理解。
+
+### 今日完成
+
+- 整理 Day 2 任务清单，明确今日产物应是一页通信机制笔记和至少 10 条 ROS2 CLI 命令。
+- 以 `turtlesim` 为例，给出 topic 发布/订阅观察命令，包括 `/turtle1/cmd_vel`、`/turtle1/pose`、`ros2 topic info -v`、`ros2 topic echo` 和 `ros2 topic pub`。
+- 以 `turtlesim` 为例，给出 service 请求/响应观察命令，包括 `/spawn`、`/turtle1/set_pen`、`ros2 service list -t`、`ros2 service type` 和 `ros2 service call`。
+- 以 `turtlesim` 的 `/turtle1/rotate_absolute` 为例，补充 action 的 goal、feedback、result、cancel 观察方式。
+- 补充 parameter 观察和修改命令，包括 `ros2 param list`、`ros2 param get`、`ros2 param set` 和通过 `/clear` 刷新背景颜色。
+- 解释 YAML、JSON、TOML 三种配置/数据格式的区别，并说明 ROS2 后续参数文件优先接触 YAML。
+
+### 代码、结构与文件改动
+
+- 未新增 ROS2 package、launch、config、地图、bag 或数据文件。
+- 更新 `DOCS/RECORD.md`：新增本 Day 2 工程记录。
+- 更新 `DOCS/NOTE.md`：新增 Day 2 学习笔记，记录通信模型、TurtleSim CLI 观察清单、action 关键概念和 YAML/JSON/TOML 区别。
+
+### 产物与证据
+
+- 产物为 Day 2 命令清单、通信模型学习笔记和 YAML 格式说明。
+- 当前没有新增截图、rosbag、CSV、地图、图片或代码产物。
+
+### 验证结果
+
+- 本次由 Codex 在文档中整理命令和概念，没有在当前终端实际启动 `turtlesim`、`turtle_teleop_key` 或执行 ROS2 CLI。
+- 后续如果用户实际运行命令，建议保存关键终端输出或截图：`ros2 topic list -t`、`ros2 service list -t`、`ros2 action list -t`、`ros2 param list /turtlesim` 和 `/turtle1/rotate_absolute` 的 feedback/result 输出。
+
+### Claude 审阅与采纳情况
+
+- 无。
+
+### 待办与风险
+
+- Day 2 仍需用户在本机实际运行上述 TurtleSim 命令，确认 topic、service、action、parameter 的输出和界面变化。
+- Day 3 将进入 `ament_python` 练习包创建，需要把今天理解的发布/订阅和 parameter 落到自己的 Python node 中。
+
+## 2026-06-15 Day 3：创建自己的 ROS2 Python 包
+
+### 对应计划
+
+对应 `DOCS/PLAN.md` 的 Stage 1：ROS2 基础入口，以及 Day 3：创建自己的 ROS2 Python 包。今天目标是从观察 ROS2 demo 进入自己编写节点，形成 `改代码 -> colcon build -> source -> ros2 run -> 观察输出` 的最小闭环。
+
+### 今日完成
+
+- 在当前项目 workspace `/home/yhc23/PROJECT/ROS2_demo_ws` 下创建了 `src/blade_demo_basics` 练习包。
+- 编写 `status_publisher.py`，使用 `rclpy` 创建 `status_publisher` 节点，声明 `robot_name` 和 `publish_rate` 参数，并通过 timer 定时向 `blade_status` topic 发布 `std_msgs/String` 消息。
+- 编写 `status_subscriber.py`，创建 `status_subscriber` 节点，订阅同一个 `blade_status` topic 并打印收到的状态消息。
+- 在 `setup.py` 中注册两个 console script entry point：`status_publisher` 和 `status_subscriber`。
+- 结合代码解释了 `rclpy`、package/node/topic 的区别、`setup.py` entry point 的作用，以及 `main()` 中 `init/spin/destroy_node/shutdown` 的生命周期。
+
+### 代码、结构与文件改动
+
+- 新增 `src/blade_demo_basics/package.xml`：声明包名、`ament_python` 构建类型，以及 `rclpy`、`std_msgs` 依赖。
+- 新增 `src/blade_demo_basics/setup.py`：配置 Python 包安装和 `ros2 run` 可执行入口。
+- 新增 `src/blade_demo_basics/blade_demo_basics/status_publisher.py`：Day 3 publisher 节点。
+- 新增 `src/blade_demo_basics/blade_demo_basics/status_subscriber.py`：Day 3 subscriber 节点。
+- 新增 `src/blade_demo_basics/README.md`：记录基本 build 命令；当前 README 仍需补齐 run/check 部分和 Markdown 代码块结尾。
+- 当前工作区出现 `build/`、`install/`、`log/`，属于 `colcon build` 生成产物，后续需要通过 `.gitignore` 或版本管理策略避免误提交。
+
+### 产物与证据
+
+- `install/blade_demo_basics/lib/blade_demo_basics/status_publisher` 已生成。
+- `install/blade_demo_basics/lib/blade_demo_basics/status_subscriber` 已生成。
+- `log/build_2026-06-15_16-38-16/blade_demo_basics/stdout_stderr.log` 显示 `status_publisher.py`、`status_subscriber.py` 被复制到 install 目录，并安装了两个 console script。
+
+### 验证结果
+
+- 已有 `colcon build` 产物和日志证据，说明 `blade_demo_basics` 至少完成了构建与安装步骤。
+- Codex 当前没有亲自复跑 `ros2 run blade_demo_basics status_publisher`、`ros2 run blade_demo_basics status_subscriber` 和 `ros2 topic echo /blade_status`，因此双终端运行、topic echo 和参数覆盖仍需最终确认。
+
+### Claude 审阅与采纳情况
+
+- 无。
+
+### 待办与风险
+
+- 补齐或修正 `src/blade_demo_basics/README.md`，至少包含 publisher/subscriber 运行命令、参数覆盖命令和 topic/param 检查命令。
+- 建议运行并保存关键输出：`ros2 node list`、`ros2 topic info -v /blade_status`、`ros2 topic echo /blade_status`、`ros2 param get /status_publisher robot_name`。
+- Day 4 将在此基础上增加 launch 文件和 YAML 参数文件，把两个节点组织成一条命令可复现的实验。
