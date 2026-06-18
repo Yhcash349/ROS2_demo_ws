@@ -1,0 +1,4 @@
+status_publisher:
+  ros__parameters:
+    robot_name: "day4_blade_robot"
+    publish_rate: 2.0

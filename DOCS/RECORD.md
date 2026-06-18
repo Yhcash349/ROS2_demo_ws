@@ -208,3 +208,50 @@
 - 补齐或修正 `src/blade_demo_basics/README.md`，至少包含 publisher/subscriber 运行命令、参数覆盖命令和 topic/param 检查命令。
 - 建议运行并保存关键输出：`ros2 node list`、`ros2 topic info -v /blade_status`、`ros2 topic echo /blade_status`、`ros2 param get /status_publisher robot_name`。
 - Day 4 将在此基础上增加 launch 文件和 YAML 参数文件，把两个节点组织成一条命令可复现的实验。
+
+## 2026-06-18 Day 4：Launch、参数文件与最小工程组织
+
+### 对应计划
+
+对应 `DOCS/PLAN.md` 的 Stage 1：ROS2 基础入口，以及 Day 4：Launch、参数文件与最小工程组织。今天目标是把 Day 3 的 publisher/subscriber 节点从“分别手动运行”整理为“通过一条 launch 命令启动，并从 YAML 加载参数”的可复现实验。
+
+### 今日完成
+
+- 在 `blade_demo_basics` 包内新增 launch/config 组织方式，用 `demo.launch.py` 同时启动 `status_publisher` 和 `status_subscriber`。
+- 将 `status_publisher` 的 `robot_name` 和 `publish_rate` 参数写入 `status_demo.yaml`，练习通过 YAML 管理节点运行配置。
+- 在 launch 文件中把两个节点的 `blade_status` 都 remap 到 `demo/blade_status`，保证发布端和订阅端仍然对准同一个 topic。
+- 修复 `ros2 launch blade_demo_basics demo.launch.py` 报 `file 'demo.launch.py' was not found in the share directory` 的问题。
+- 补齐 `src/blade_demo_basics/README.md` 的 Markdown 代码块，并新增 build、单独运行、launch 和检查命令。
+
+### 代码、结构与文件改动
+
+- 新增 `src/blade_demo_basics/launch/demo.launch.py`：使用 `LaunchDescription` 和两个 `Node` action 统一启动 publisher/subscriber。
+- 新增 `src/blade_demo_basics/config/status_demo.yaml`：配置 `status_publisher` 的 `robot_name: day4_blade_robot` 和 `publish_rate: 2.0`。
+- 修改 `src/blade_demo_basics/setup.py`：补充 `os`、`glob` 导入，并在 `data_files` 中安装 `launch/*.launch.py` 和 `config/*.yaml` 到 package share 目录。
+- 修改 `src/blade_demo_basics/README.md`：补充 Day 4 的 `ros2 launch` 复现步骤和 `ros2 topic/param` 检查命令。
+
+### 产物与证据
+
+- `install/blade_demo_basics/share/blade_demo_basics/launch/demo.launch.py` 已生成。
+- `install/blade_demo_basics/share/blade_demo_basics/config/status_demo.yaml` 已生成。
+- 通过短时间 launch 输出确认两个节点能启动，并且 subscriber 能收到 publisher 的消息。
+
+### 验证结果
+
+- 运行 `colcon build --packages-select blade_demo_basics`，结果为 `1 package finished`。
+- 运行 `ROS_LOG_DIR=/tmp/ros_logs ros2 launch blade_demo_basics demo.launch.py --show-args`，launch 文件解析成功，输出 `No arguments`。
+- 短时间运行 `ROS_LOG_DIR=/tmp/ros_logs timeout 5s ros2 launch blade_demo_basics demo.launch.py`，验证到：
+  - `status_publisher` 和 `status_subscriber` 进程启动。
+  - `status_publisher` 使用 YAML 参数启动：`robot_name=day4_blade_robot, publish_rate=2.0`。
+  - `status_subscriber` 收到 `/demo/blade_status` 上的消息，例如 `Received: day4_blade_robot status ok, count=0`。
+- 当前沙箱环境运行 ROS2 时出现 `getifaddrs: Operation not permitted` 和 UDP socket 权限提示，但节点仍然完成了本地发布/订阅通信。真实用户终端通常不受该沙箱限制。
+- 本次验证临时使用 `/tmp/ros_logs` 作为 ROS 日志目录，并在验证后清理。
+
+### Claude 审阅与采纳情况
+
+- 无。
+
+### 待办与风险
+
+- 用户可在自己的普通终端中重新运行 `ros2 launch blade_demo_basics demo.launch.py`，再用另一个终端检查 `ros2 topic info -v /demo/blade_status` 和 `ros2 param get /status_publisher publish_rate`。
+- Day 5 将进入 tf2、坐标系与 RViz，需要从“节点组织和参数管理”过渡到“机器人空间关系和可视化调试”。

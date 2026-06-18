@@ -367,3 +367,136 @@ A：`spin` 让节点持续运行并处理 ROS2 事件。publisher 的 timer call
 ## 明日衔接
 
 明天进入 Day 4：Launch、参数文件与最小工程组织。今天两个节点已经能作为独立命令运行，明天要把它们放进一个 launch 文件中统一启动，并把 `robot_name`、`publish_rate` 这类参数迁移到 YAML 文件里，为后续 Nav2 参数配置打基础。
+
+# 2026-06-18 Day 4：Launch、参数文件与最小工程组织
+
+## 今日学习位置
+
+今天对应 `DOCS/PLAN.md` 的 Stage 1：ROS2 基础入口，以及 Day 4：Launch、参数文件与最小工程组织。Day 3 已经能分别运行 publisher 和 subscriber，今天的重点是把零散节点组织成一条命令可复现的实验：`ros2 launch blade_demo_basics demo.launch.py`。
+
+Day 4 在整个风机巡检小项目里的作用是建立后续工程组织习惯。之后 Nav2、图像采集、任务日志、rosbag 记录不可能都靠手动开多个终端启动，而应该由 launch 文件统一组织，由 YAML 参数文件管理可调整配置。
+
+## 今日完成任务
+
+今天给 `blade_demo_basics` 增加了 `launch/demo.launch.py` 和 `config/status_demo.yaml`。launch 文件同时启动 `status_publisher` 和 `status_subscriber`，YAML 文件把 `robot_name` 设置为 `day4_blade_robot`，把 `publish_rate` 设置为 `2.0`。
+
+今天还修复了一个典型 ROS2 Python 包问题：源码目录里有 `launch/demo.launch.py`，但 `ros2 launch` 仍然报找不到文件。原因是 `ros2 launch` 查找的是安装后的 package share 目录，不是直接查 `src/`。因此必须在 `setup.py` 的 `data_files` 中声明把 `launch/*.launch.py` 和 `config/*.yaml` 安装进去。
+
+今天最重要的闭环是：**launch 负责统一启动多个节点，YAML 负责外部配置参数，setup.py 负责把 launch/config 等非 Python 文件安装到 ROS2 能找到的位置。**
+
+## 基本概念
+
+`launch` 文件是 ROS2 的启动编排文件。它不负责实现业务逻辑，而是描述“启动哪些节点、节点叫什么、从哪里加载参数、topic 是否改名、日志怎么输出”。今天的 `demo.launch.py` 里有两个 `Node` action，一个启动 `status_publisher`，一个启动 `status_subscriber`。
+
+`LaunchDescription` 可以理解成一份启动清单。`generate_launch_description()` 返回这份清单后，`ros2 launch` 就按照清单创建对应进程。今天的清单里没有复杂事件、条件判断或组合 launch，只保留最小可理解结构。
+
+YAML 参数文件用于把可调配置从代码里移出来。今天的 `status_demo.yaml` 写法是：
+
+```yaml
+status_publisher:
+  ros__parameters:
+    robot_name: "day4_blade_robot"
+    publish_rate: 2.0
+```
+
+第一层 `status_publisher` 要对应节点名，`ros__parameters` 是 ROS2 参数文件固定字段，下面才是真正的参数名和值。这样做的好处是：要改机器人名字或发布频率时，不需要改 Python 源码，只改配置文件并重新 launch。
+
+`remap` 是启动时改 topic 名。代码里 publisher 和 subscriber 都写的是 `blade_status`，launch 中把两边都 remap 到 `demo/blade_status`。两个节点都要 remap 的原因是：publisher 换了发布频道，subscriber 也必须换到同一个频道听，否则一个发到 `/demo/blade_status`，另一个还在 `/blade_status` 等消息，就无法通信。
+
+`setup.py` 的 `data_files` 不只影响 Python 入口，也影响 launch/config 这类资源文件是否能被 ROS2 找到。`ros2 launch blade_demo_basics demo.launch.py` 查找的是 `install/blade_demo_basics/share/blade_demo_basics/launch/demo.launch.py`。如果 `setup.py` 没有安装 launch 文件，即使源码目录里有这个文件，ROS2 也会报 `file 'demo.launch.py' was not found in the share directory`。
+
+## ROS2 Python 包工作流程总览
+
+一个 ROS2 Python 包可以理解成“把一组机器人功能节点组织起来的工程文件夹”。包本身不是正在运行的程序，而是代码、配置、启动方式和依赖声明的集合；真正运行起来的是包里面的 node。
+
+以当前 `blade_demo_basics` 为例，最小 Python 包主要由这些部分组成：
+
+```text
+src/blade_demo_basics/
+  package.xml
+  setup.py
+  setup.cfg
+  resource/blade_demo_basics
+  blade_demo_basics/
+    __init__.py
+    status_publisher.py
+    status_subscriber.py
+  launch/
+    demo.launch.py
+  config/
+    status_demo.yaml
+  README.md
+```
+
+`package.xml` 是包的身份和依赖说明书。它告诉 ROS2 这个包叫什么、依赖哪些库，例如当前包依赖 `rclpy` 和 `std_msgs`。
+
+`setup.py` 是 Python 包的安装规则。它告诉 `colcon build` 哪些 Python 模块要安装，哪些命令要注册成 `ros2 run` 入口，哪些 launch/config 文件要复制到 install 目录。`console_scripts` 里的 `status_publisher = blade_demo_basics.status_publisher:main` 表示运行 `ros2 run blade_demo_basics status_publisher` 时，执行 `status_publisher.py` 里的 `main()`。
+
+`blade_demo_basics/` 这个 Python 模块目录放真正的节点代码。今天的 `status_publisher.py` 负责定时发布状态消息，`status_subscriber.py` 负责订阅消息并打印。`__init__.py` 用来告诉 Python 这是一个可导入的模块目录。
+
+`resource/blade_demo_basics` 是 ROS2 的包索引标记文件，平时不用改，但它帮助 ROS2 在安装后识别这个包。`launch/` 放启动文件，用来统一启动多个节点、加载 YAML 参数、设置 remap 和输出方式。`config/` 放参数文件，例如 `status_demo.yaml` 管理 `robot_name` 和 `publish_rate`。`README.md` 是给人看的复现说明，应该写清楚怎么 build、source、run、launch 和检查 topic/param。
+
+一个包写好之后，正式运行前通常要经过这几步：
+
+```bash
+cd /home/yhc23/PROJECT/ROS2_demo_ws
+source /opt/ros/jazzy/setup.bash
+colcon build --packages-select blade_demo_basics
+source install/setup.bash
+```
+
+`source /opt/ros/jazzy/setup.bash` 是加载系统 ROS2 环境；`colcon build` 是把源码包构建并安装到 `install/`；`source install/setup.bash` 是把当前 workspace 里的包加载到当前终端。每开一个新终端，都要重新 source。
+
+如果只运行单个节点，用 `ros2 run`：
+
+```bash
+ros2 run blade_demo_basics status_publisher
+ros2 run blade_demo_basics status_subscriber
+```
+
+如果要一次启动多个节点，用 `ros2 launch`：
+
+```bash
+ros2 launch blade_demo_basics demo.launch.py
+```
+
+所以 Day 1-4 的 ROS2 最小工程闭环可以压缩成一句话：`package.xml` 声明依赖，`setup.py` 注册安装和命令入口，Python 文件实现 node，YAML 管参数，launch 统一启动节点，`colcon build` 安装包，`source` 让终端找到包，最后用 `ros2 run` 或 `ros2 launch` 正式运行。
+
+## 项目连接
+
+今天虽然只启动了两个练习节点，但模式已经和后续项目一致。未来风机巡检 demo 中，Nav2 bringup、相机记录、任务日志、环绕航点脚本都需要被统一启动；环绕半径、航点数量、速度限制、目标 topic、保存路径等配置也应该放进 YAML，而不是散落在代码里。
+
+今天的 `demo/blade_status` 可以看作未来任务状态 topic 的雏形。之后它可以扩展成“当前航点编号、采集状态、任务是否完成、图像保存结果”等信息。launch 和 YAML 的价值，就是让这些节点和配置能被别人复现，而不是只在自己当前终端里临时跑通。
+
+## 踩坑记录
+
+<span style="color:red">用户提问：两个节点都要 remap 是干啥？</span>
+
+答：remap 是启动时把代码里的 topic 名换成新 topic 名。publisher 和 subscriber 必须对准同一个 topic 才能通信。如果只 remap publisher，它会发到 `/demo/blade_status`，subscriber 仍然听 `/blade_status`，两边就错开了。所以两个节点都要 remap 到同一个新名字。
+
+<span style="color:red">用户遇到：`ros2 launch blade_demo_basics demo.launch.py` 报 `file 'demo.launch.py' was not found in the share directory`。</span>
+
+原因：`setup.py` 只安装了 `package.xml`，没有安装 `launch/*.launch.py` 和 `config/*.yaml`。修复方式是在 `data_files` 里加上 launch/config 的安装规则，然后重新 `colcon build` 和 `source install/setup.bash`。
+
+补充踩坑：Codex 沙箱里运行 ROS2 launch 时，默认写 `~/.ros/log` 会遇到只读文件系统，所以验证时临时设置了 `ROS_LOG_DIR=/tmp/ros_logs`。这属于当前 agent 沙箱限制，不是项目代码问题。
+
+## 八股自测
+
+Q：ROS2 launch 文件解决什么问题？
+A：它把多个节点、参数文件、topic remap 和输出方式组织到一起，让实验可以用一条命令复现，而不是手动开多个终端分别运行。
+
+Q：为什么参数要放进 YAML？
+A：YAML 让节点配置独立于代码。比如 `robot_name`、`publish_rate` 后续可以换成环绕半径、航点数量、速度限制和保存路径，这些都适合配置化。
+
+Q：`ros2 launch` 为什么找的是 install/share 目录？
+A：ROS2 运行时查找的是已安装 package 的资源目录。源码里的文件只有被 `setup.py` 安装到 `install/.../share/<package>/` 后，`ros2 launch` 才能按 package 名找到它。
+
+Q：remap 和改代码里的 topic 名有什么区别？
+A：改代码是固定修改节点默认行为；remap 是启动时临时改名，同一个节点可以在不同实验里接到不同 topic 上，更灵活，也更适合 launch 组织。
+
+Q：为什么 publisher 和 subscriber 要同时 remap？
+A：topic 通信要求发布端和订阅端名字一致。只改一边会导致两边处在不同 topic 上，subscriber 收不到 publisher 的消息。
+
+## 明日衔接
+
+明天进入 Day 5：tf2、坐标系与 RViz。今天解决的是“如何组织和启动节点”，明天开始理解机器人系统里的空间关系，也就是 `map -> odom -> base_link -> sensor` 这些坐标系如何影响可视化和导航调试。
