@@ -1,0 +1,22 @@
+[1.204s] Invoking command in '/home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics': PYTHONPATH=/home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/build --no-deps symlink_data --force
+[1.508s] running develop
+[1.700s] running egg_info
+[1.718s] writing blade_demo_basics.egg-info/PKG-INFO
+[1.718s] writing dependency_links to blade_demo_basics.egg-info/dependency_links.txt
+[1.719s] writing entry points to blade_demo_basics.egg-info/entry_points.txt
+[1.719s] writing requirements to blade_demo_basics.egg-info/requires.txt
+[1.719s] writing top-level names to blade_demo_basics.egg-info/top_level.txt
+[1.757s] reading manifest file 'blade_demo_basics.egg-info/SOURCES.txt'
+[1.758s] writing manifest file 'blade_demo_basics.egg-info/SOURCES.txt'
+[1.779s] running build_ext
+[1.779s] Creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/python3.12/site-packages/blade-demo-basics.egg-link (link to .)
+[1.780s] Installing status_publisher script to /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/blade_demo_basics
+[1.780s] Installing status_subscriber script to /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/blade_demo_basics
+[1.781s] 
+[1.781s] Installed /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics
+[1.781s] running symlink_data
+[1.781s] symbolically linking /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/resource/blade_demo_basics -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/share/ament_index/resource_index/packages
+[1.782s] symbolically linking /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/package.xml -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/share/blade_demo_basics
+[1.782s] symbolically linking /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/launch/demo.launch.py -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/share/blade_demo_basics/launch
+[1.783s] symbolically linking /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/config/status_demo.yaml -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/share/blade_demo_basics/config
+[1.817s] Invoked command in '/home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics' returned '0': PYTHONPATH=/home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/build --no-deps symlink_data --force

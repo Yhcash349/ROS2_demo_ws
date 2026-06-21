@@ -4,3 +4,6 @@ source;share/blade_demo_basics/hook/pythonpath.sh
 source;share/blade_demo_basics/hook/ament_prefix_path.ps1
 source;share/blade_demo_basics/hook/ament_prefix_path.dsv
 source;share/blade_demo_basics/hook/ament_prefix_path.sh
+source;../../build/blade_demo_basics/share/blade_demo_basics/hook/pythonpath_develop.ps1
+source;../../build/blade_demo_basics/share/blade_demo_basics/hook/pythonpath_develop.dsv
+source;../../build/blade_demo_basics/share/blade_demo_basics/hook/pythonpath_develop.sh

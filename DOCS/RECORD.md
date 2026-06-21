@@ -255,3 +255,49 @@
 
 - 用户可在自己的普通终端中重新运行 `ros2 launch blade_demo_basics demo.launch.py`，再用另一个终端检查 `ros2 topic info -v /demo/blade_status` 和 `ros2 param get /status_publisher publish_rate`。
 - Day 5 将进入 tf2、坐标系与 RViz，需要从“节点组织和参数管理”过渡到“机器人空间关系和可视化调试”。
+
+## 2026-06-21 Day 5：tf2、坐标系与 RViz
+
+### 对应计划
+
+对应 `DOCS/PLAN.md` 的 Stage 2：仿真与导航基础，以及 Day 5：tf2、坐标系与 RViz。今天目标是理解 `map -> odom -> base_link -> sensor` 坐标树，能用 RViz 显示 TF、LaserScan 和 Image，并能初步判断 frame 缺失、topic 未订阅、坐标树断开等常见问题。
+
+### 今日完成
+
+- 使用 `tf2_ros static_transform_publisher` 手动发布静态坐标变换，搭建最小 tf tree。
+- 使用 RViz 显示 Grid、TF、LaserScan 和 Image。
+- 使用 `view_frames` 生成 tf 坐标树 PDF。
+- 观察到 `/scan` 和 `/image` 话题均有实际数据，并在 RViz 中完成 topic 选择和显示排查。
+- 结合 RViz 截图解释了 `map`、`odom`、`base_link`、`camera_frame`、`laser_frame` 或 `single_rrbot_hokuyo_link` 的含义。
+
+### 代码、结构与文件改动
+
+- 今日未新增或修改 ROS2 package 代码。
+- 当前正式产物新增 `frames_2026-06-21_21.27.25.pdf`，用于记录 Day 5 tf tree。
+- 本次总结更新 `DOCS/RECORD.md` 和 `DOCS/NOTE.md`，分别记录工程证据与学习理解。
+
+### 产物与证据
+
+- `frames_2026-06-21_21.27.25.pdf`：由 `ros2 run tf2_tools view_frames` 生成的 tf tree 图。
+- RViz 截图：显示 `Fixed Frame: map`、TF 坐标轴、`LaserScan` display、`Image` display 和图像窗口。
+- 终端输出显示当前存在关键 topic：`/tf`、`/tf_static`、`/scan`、`/image`。
+- `/scan` 的消息类型为 `sensor_msgs/msg/LaserScan`，实际 `frame_id` 为 `single_rrbot_hokuyo_link`。
+- `/image` 的消息类型为 `sensor_msgs/msg/Image`，实际 `frame_id` 为 `camera_frame`，图像尺寸为 `320x240`，编码为 `bgr8`。
+
+### 验证结果
+
+- 运行 `ros2 topic list -t`，确认 `/image [sensor_msgs/msg/Image]`、`/scan [sensor_msgs/msg/LaserScan]`、`/tf [tf2_msgs/msg/TFMessage]`、`/tf_static [tf2_msgs/msg/TFMessage]` 存在。
+- 运行 `ros2 topic echo /scan --once`，确认 LaserScan 有数据；其中 `frame_id: single_rrbot_hokuyo_link`。
+- 运行 `ros2 topic echo /image --once`，确认 Image 有数据；其中 `frame_id: camera_frame`。
+- RViz 初始出现 `Error subscribing: Empty topic name`，判断原因是 `Image` 和 `LaserScan` display 的 `Topic` 为空；将 topic 分别设置为 `/image` 和 `/scan` 后恢复显示。
+- `LaserScan` 需要 tf tree 能从 `map` 连到 `single_rrbot_hokuyo_link`；如果只发布了 `base_link -> laser_frame`，则需要补充或改用 `base_link -> single_rrbot_hokuyo_link`。
+
+### Claude 审阅与采纳情况
+
+- 无。
+
+### 待办与风险
+
+- Day 6 将进入 Gazebo/TurtleBot 仿真，需要把今天的静态 tf 理解迁移到仿真机器人运动中的动态 `/odom`、`/scan`、`/cmd_vel` 和传感器话题观察。
+- 当前 Day 5 使用手动 static transform 搭建教学用坐标树，真实机器人或仿真中 `odom -> base_link` 通常应由里程计、仿真器或状态估计节点动态发布。
+- 后续建议保存一张 RViz 截图到计划内报告或数据目录；当前截图来自对话上下文，尚未作为项目文件落盘。

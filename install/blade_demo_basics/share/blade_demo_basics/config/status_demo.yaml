@@ -1,4 +1,1 @@
-status_publisher:
-  ros__parameters:
-    robot_name: "day4_blade_robot"
-    publish_rate: 2.0
+/home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/config/status_demo.yaml

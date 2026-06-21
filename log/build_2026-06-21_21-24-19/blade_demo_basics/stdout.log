@@ -1,0 +1,20 @@
+running develop
+running egg_info
+writing blade_demo_basics.egg-info/PKG-INFO
+writing dependency_links to blade_demo_basics.egg-info/dependency_links.txt
+writing entry points to blade_demo_basics.egg-info/entry_points.txt
+writing requirements to blade_demo_basics.egg-info/requires.txt
+writing top-level names to blade_demo_basics.egg-info/top_level.txt
+reading manifest file 'blade_demo_basics.egg-info/SOURCES.txt'
+writing manifest file 'blade_demo_basics.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/python3.12/site-packages/blade-demo-basics.egg-link (link to .)
+Installing status_publisher script to /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/blade_demo_basics
+Installing status_subscriber script to /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/lib/blade_demo_basics
+
+Installed /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics
+running symlink_data
+symbolically linking /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/resource/blade_demo_basics -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/share/ament_index/resource_index/packages
+symbolically linking /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/package.xml -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/share/blade_demo_basics
+symbolically linking /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/launch/demo.launch.py -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/share/blade_demo_basics/launch
+symbolically linking /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_demo_basics/config/status_demo.yaml -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_demo_basics/share/blade_demo_basics/config
