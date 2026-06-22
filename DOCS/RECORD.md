@@ -301,3 +301,74 @@
 - Day 6 将进入 Gazebo/TurtleBot 仿真，需要把今天的静态 tf 理解迁移到仿真机器人运动中的动态 `/odom`、`/scan`、`/cmd_vel` 和传感器话题观察。
 - 当前 Day 5 使用手动 static transform 搭建教学用坐标树，真实机器人或仿真中 `odom -> base_link` 通常应由里程计、仿真器或状态估计节点动态发布。
 - 后续建议保存一张 RViz 截图到计划内报告或数据目录；当前截图来自对话上下文，尚未作为项目文件落盘。
+
+## 2026-06-22 Day 6：Gazebo 仿真与 TurtleBot
+
+### 对应计划
+
+对应 `DOCS/PLAN.md` 的 Stage 2：仿真与导航基础，以及 Day 6：Gazebo 仿真与 TurtleBot。今天目标是启动 TurtleBot/Gazebo 仿真，用键盘遥控机器人，观察 `/cmd_vel`、`/odom`、`/scan`、`/tf` 等关键 topic，并录制一个可回放 rosbag。
+
+### 今日完成
+
+- 启动 TurtleBot3 Gazebo 仿真，并确认当前环境为 ROS2 Jazzy + Gazebo Sim 8。
+- 排查 `ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py` 报错 `'NoneType' object has no attribute 'lower'` 的问题。
+- 确认 Gazebo vendor 版 `gz` 可执行文件位于 `/opt/ros/jazzy/opt/gz_tools_vendor/bin/gz`，并通过补充 `PATH` 和 `GZ_CONFIG_PATH` 使 `gz sim --versions` 正常输出 `8.11.0`。
+- 使用 `teleop_keyboard` 遥控仿真机器人，并通过 ROS2 CLI 观察节点、话题、发布者、订阅者和消息内容。
+- 在 RViz 中解释如何通过 `Fixed Frame: odom`、`TF`、`RobotModel`、`LaserScan` 显示仿真机器人与雷达数据。
+- 录制并回放 Day 6 rosbag，确认 `/cmd_vel`、`/odom`、`/scan`、`/tf`、`/tf_static` 均被写入 bag。
+
+### 代码、结构与文件改动
+
+- 今日未新增或修改 ROS2 package 代码。
+- 今日未将 rosbag 纳入项目目录；bag 临时保存在 `/tmp/ros2_day6_bag`，符合大体积数据不直接放入仓库的原则。
+- 本次总结更新 `DOCS/RECORD.md` 和 `DOCS/NOTE.md`，分别记录工程证据与学习理解。
+
+### 产物与证据
+
+- 节点观察结果显示当前 ROS2 系统存在：
+  - `/robot_state_publisher`
+  - `/ros_gz_bridge`
+  - `/teleop_keyboard`
+- 关键 topic 清单包括：
+  - `/cmd_vel [geometry_msgs/msg/TwistStamped]`
+  - `/odom [nav_msgs/msg/Odometry]`
+  - `/scan [sensor_msgs/msg/LaserScan]`
+  - `/tf [tf2_msgs/msg/TFMessage]`
+  - `/tf_static [tf2_msgs/msg/TFMessage]`
+  - `/robot_description [std_msgs/msg/String]`
+- `/cmd_vel` 的发布订阅关系为：`teleop_keyboard` 发布，`ros_gz_bridge` 订阅，说明键盘控制链路已接到 Gazebo bridge。
+- `/odom` 和 `/scan` 均由 `ros_gz_bridge` 发布，说明 Gazebo 仿真数据已桥接到 ROS2。
+- `/odom` 单条消息中 `frame_id: odom`、`child_frame_id: base_footprint`，机器人位置和速度接近 0，说明当时机器人基本位于起点附近。
+- `/scan` 单条消息中 `frame_id: base_scan`，`range_min: 0.12`、`range_max: 3.5`，`ranges` 中同时存在 `.inf` 和具体距离值，说明虚拟雷达能观测到周围障碍物。
+- rosbag 产物路径为 `/tmp/ros2_day6_bag/rosbag2_2026_06_22-21_27_14`。
+- rosbag 信息：
+  - 大小：`4.6 MiB`
+  - 存储格式：`mcap`
+  - ROS 发行版：`jazzy`
+  - 时长：`81.597848024s`
+  - 消息总数：`9628`
+  - `/cmd_vel`：`836` 条
+  - `/odom`：`3505` 条
+  - `/scan`：`350` 条
+  - `/tf`：`4936` 条
+  - `/tf_static`：`1` 条
+
+### 验证结果
+
+- 运行 `ros2 node list`，确认仿真、bridge、键盘遥控相关节点存在。
+- 运行 `ros2 topic list -t`，确认 Day 6 需要观察的控制、里程计、雷达和 tf topic 存在。
+- 运行 `ros2 topic info -v /cmd_vel`，确认 `/cmd_vel` 存在 1 个 publisher 和 1 个 subscription，分别为 `teleop_keyboard` 和 `ros_gz_bridge`。
+- 运行 `ros2 topic info -v /odom` 和 `ros2 topic info -v /scan`，确认两者由 `ros_gz_bridge` 发布。
+- 运行 `ros2 topic echo /odom --once` 和 `ros2 topic echo /scan --once`，确认里程计和雷达消息内容合理。
+- 运行 `ros2 bag info rosbag2_2026_06_22-21_27_14`，确认 bag 内包含 `/cmd_vel`、`/odom`、`/scan`、`/tf` 和 `/tf_static`。
+- 运行 `ros2 bag play rosbag2_2026_06_22-21_27_14`，回放进程正常启动，并在用户停止后输出 `Stopping playback`。
+
+### Claude 审阅与采纳情况
+
+- 无。
+
+### 待办与风险
+
+- 当前 bag 没有录制 `/robot_description`，因此单独 `ros2 bag play` 时 RViz 可能只能显示 TF 和 LaserScan，完整 RobotModel 仍需要同时提供 `/robot_description` 或重新启动 `robot_state_publisher`。
+- 如果后续需要把 Day 6 证据长期保存，应将 `rosbag2_2026_06_22-21_27_14` 转移到计划内数据目录，或只在 `DOCS/RECORD.md` 中保留 `ros2 bag info` 摘要，避免大文件进入版本管理。
+- Day 7 将进入 Nav2 第一次导航，需要在今天 Gazebo/TurtleBot 能稳定运行的基础上启动 Nav2 bringup，并观察 AMCL、planner、controller、costmap 和 RViz 目标点导航效果。

@@ -612,3 +612,105 @@ A：先用 `ros2 topic list -t` 确认 topic 存在，再用 `ros2 topic echo --
 ## 明日衔接
 
 明天进入 Day 6：Gazebo 仿真与 TurtleBot。今天的坐标树是手动搭出来的，明天会在仿真机器人中观察这些关系如何由 Gazebo、robot_state_publisher、里程计和传感器节点自动发布，并进一步观察 `/cmd_vel`、`/odom`、`/scan` 和相机话题。
+
+# 2026-06-22 Day 6：Gazebo 仿真、TurtleBot 与 rosbag
+
+## 今日学习位置
+
+今天对应 `DOCS/PLAN.md` 的 Stage 2：仿真与导航基础，以及 Day 6：Gazebo 仿真与 TurtleBot。Day 5 手动搭了一个教学用 tf tree，今天进入真正的仿真机器人系统：Gazebo 负责生成虚拟世界、机器人运动和传感器数据，ROS2 负责用 node、topic、tf 和 rosbag 把这些数据组织起来。
+
+Day 6 在风机巡检小项目里的作用是建立低风险试验场。后续不可能一开始就拿真实机器人围着真实风机跑，所以要先在 Gazebo 中验证机器人能动、雷达有数据、里程计有数据、tf 能连通、rosbag 能回放。这些能力是 Day 7 Nav2 自主导航和 Day 14 数据采集复盘的基础。
+
+## 今日完成任务
+
+今天启动了 TurtleBot3 Gazebo 仿真，并通过 `teleop_keyboard` 遥控机器人。系统中观察到 `/robot_state_publisher`、`/ros_gz_bridge` 和 `/teleop_keyboard` 三个核心节点。`/cmd_vel` 由键盘遥控节点发布、由 `ros_gz_bridge` 订阅，说明控制命令能从 ROS2 进入 Gazebo。`/odom` 和 `/scan` 由 `ros_gz_bridge` 发布，说明 Gazebo 中的仿真运动和虚拟雷达数据能进入 ROS2。
+
+今天还排查了 Gazebo 启动中的环境问题：Jazzy 使用 Gazebo Sim 8，`gz` 可执行文件和命令配置位于 ROS vendor 目录下。若当前 shell 没有正确设置 `PATH` 和 `GZ_CONFIG_PATH`，`turtlebot3_gazebo` launch 可能报 `'NoneType' object has no attribute 'lower'`，本质原因是 Gazebo 命令入口没有被正确找到。
+
+今天录制了一个 rosbag，路径为 `/tmp/ros2_day6_bag/rosbag2_2026_06_22-21_27_14`。它记录了 81.6 秒、9628 条消息，包括 `/cmd_vel`、`/odom`、`/scan`、`/tf` 和 `/tf_static`。这说明 Day 6 已经不只是“看见仿真界面”，而是把机器人运动和传感器数据保存成了可回放实验材料。
+
+今天最重要的收获是：**Gazebo 负责产生仿真世界和传感器数据，ROS2 topic 负责传输这些数据，RViz 负责订阅并可视化，rosbag 负责把 topic 数据录下来以后复盘。**
+
+## 基本概念
+
+`Gazebo` 是机器人开发中的仿真试验场。它模拟地面、障碍物、机器人模型、传感器、碰撞和运动。真实机器人调试成本高，也容易受场地、硬件和安全限制影响；Gazebo 让开发者可以先在虚拟环境里验证控制、感知、导航和数据采集链路。
+
+`ros_gz_bridge` 是 Gazebo 和 ROS2 之间的桥。Gazebo 内部有自己的仿真通信系统，ROS2 有自己的 topic、message 和 node。bridge 的作用是把 Gazebo 中的激光雷达、里程计、时钟等数据转换成 ROS2 topic，也把 ROS2 里的 `/cmd_vel` 控制命令送回 Gazebo。
+
+`/cmd_vel` 是速度命令 topic。今天它的类型是 `geometry_msgs/msg/TwistStamped`，发布者是 `teleop_keyboard`，订阅者是 `ros_gz_bridge`。这条链路说明键盘按键会变成速度命令，再通过 bridge 驱动 Gazebo 中的 TurtleBot。
+
+`/odom` 是里程计 topic。它的类型是 `nav_msgs/msg/Odometry`，消息中 `frame_id: odom`、`child_frame_id: base_footprint` 表示这条消息描述的是机器人底盘在 `odom` 坐标系中的位姿和速度。后续 Nav2 需要持续知道机器人在哪里，`/odom` 就是关键状态来源之一。
+
+`/scan` 是激光雷达 topic。它的类型是 `sensor_msgs/msg/LaserScan`，消息中 `frame_id: base_scan` 表示数据来自雷达坐标系。`ranges` 是一圈扫描中的距离数组，`.inf` 表示该方向在最大探测距离内没有打到障碍物，具体数字如 `0.92` 表示该方向约 0.92 米处有障碍物。
+
+`/tf` 和 `/tf_static` 是坐标变换 topic。`/tf_static` 适合保存固定安装关系，例如雷达相对于车体的位置；`/tf` 适合保存动态关系，例如机器人随时间变化的 `odom -> base_footprint`。RViz 和 Nav2 都需要依赖这些变换把雷达点、机器人模型、路径和地图放进同一个空间里。
+
+`rosbag` 是 ROS2 的数据录像，不是屏幕视频。它录下的是 topic 消息本身。今天的 bag 中 `/odom` 有 3505 条，说明里程计持续更新；`/scan` 有 350 条，说明雷达数据被记录；`/tf` 有 4936 条，说明坐标变换也被保存。`ros2 bag play` 会把这些消息按原时间顺序重新发布出来，供 RViz、命令行或分析脚本订阅。
+
+## 常用观察命令
+
+`ros2 node list` 用来确认当前有哪些模块活着。今天看到的 `/robot_state_publisher`、`/ros_gz_bridge`、`/teleop_keyboard` 分别对应机器人模型与坐标发布、Gazebo/ROS2 桥接、键盘控制。
+
+`ros2 topic list -t` 用来确认系统里有哪些数据通道，以及每个 topic 的消息类型。只看名字不够，还要看类型，因为不同工具或节点只有在消息类型匹配时才能正确通信。
+
+`ros2 topic info -v /cmd_vel` 用来确认某个 topic 的发布者和订阅者。今天它证明了 `teleop_keyboard -> /cmd_vel -> ros_gz_bridge` 这条控制链路是通的。
+
+`ros2 topic echo /odom --once` 和 `ros2 topic echo /scan --once` 用来抽样看一条真实消息。`--once` 很适合学习和排查，因为它不会持续刷屏，只看一帧就能知道 frame、字段和数据是否合理。
+
+`ros2 topic hz /odom`、`ros2 topic hz /scan` 用来查看话题频率。机器人系统不是只要有一条消息就行，而是需要持续、稳定、够快的数据流。`/scan` 太慢会导致障碍物更新滞后，`/odom` 不稳定会影响定位和控制，`/tf` 延迟过大可能让 RViz 或 Nav2 报 transform 错误。
+
+`ros2 bag info <bag_dir>` 用来检查 bag 里录了哪些 topic、每个 topic 有多少条消息、总时长和存储格式。`ros2 bag play <bag_dir>` 用来重放这些 topic，但它不会自动显示画面，必须有 RViz 或其他订阅者去接收并可视化这些消息。
+
+## 项目连接
+
+在风机巡检小项目里，今天的 TurtleBot 仿真就是后续 `blade_inspection_orbit_demo` 的低成本原型。当前是键盘遥控机器人，Day 7 之后会变成 Nav2 自主发目标；当前观察的是 `/scan` 和 `/odom`，Day 13-14 会增加相机图像、位姿日志和任务 CSV；当前录的是基础 bag，后续会录制能支撑回放、排查和离线分析的完整实验数据。
+
+看节点、话题和频率的意义在后续会越来越明显。Nav2 导航失败时，要先确认 planner、controller、map server、AMCL 等节点是否存在；机器人不动时，要查 `/cmd_vel` 是否有 publisher 和 subscriber；雷达避障不工作时，要查 `/scan` 是否存在、frame 是否能接入 tf tree、频率是否稳定；RViz 空白时，要查 Fixed Frame、`/robot_description`、`/tf` 和显示项订阅的 topic。
+
+今天也提前理解了 rosbag 的价值。风机巡检任务中，机器人每个航点拍到的图像、当时的位姿、雷达状态和 tf 都需要能复盘。rosbag 让实验从“一次性现场现象”变成“可以回放、可以分析、可以给别人检查的数据材料”。
+
+## 踩坑记录
+
+<span style="color:red">用户遇到：`ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py` 报 `'NoneType' object has no attribute 'lower'`。</span>
+
+排查结果是当前 Jazzy 的 Gazebo Sim vendor 环境没有完整暴露到 shell 中。`gz` 位于 `/opt/ros/jazzy/opt/gz_tools_vendor/bin/gz`，同时还需要 `GZ_CONFIG_PATH` 指向各 vendor 包的 `share/gz` 目录。补充这些环境变量后，`gz sim --versions` 能输出 `8.11.0`，说明 Gazebo Sim 命令入口可用。
+
+<span style="color:red">用户提问：Gazebo 在机器人开发中起到什么作用？</span>
+
+Gazebo 是仿真试验场，负责让虚拟机器人在虚拟世界里运动，并生成虚拟雷达、相机、里程计等数据。它降低了真实机器人调试成本，让导航、避障、采集和数据回放可以先在仿真中跑通。
+
+<span style="color:red">用户提问：查看节点、话题和某个话题频率的实际意义在哪里？</span>
+
+节点说明模块是否启动，话题说明数据通道是否存在，发布者/订阅者说明模块之间是否接上，频率说明数据是否持续稳定。后续调试 Nav2、SLAM、RViz 和数据采集时，通常都要按“node 是否存在 -> topic 是否存在 -> pub/sub 是否接上 -> echo 内容是否合理 -> hz 是否稳定”的顺序排查。
+
+<span style="color:red">用户提问：RViz 里什么都没有，应该怎么看到仿真机器人？</span>
+
+Day 6 阶段应先把 `Fixed Frame` 设为 `odom`，再添加 `TF`、`RobotModel` 和 `/scan` 对应的 `LaserScan` display。`RobotModel` 需要订阅 `/robot_description`；`LaserScan` 需要订阅 `/scan`；两者都需要 tf 能把相关 frame 转换到 `odom` 下。
+
+<span style="color:red">用户提问：rosbag 是什么，点击 play 后显示在哪里？</span>
+
+rosbag 是 topic 数据录像，不是视频文件。`ros2 bag play` 只是重新发布录下来的 topic，不会自动弹出画面。想看到效果，需要同时打开 RViz 并订阅 `/scan`、`/tf`、`/odom` 等数据；想看完整机器人模型，还需要有 `/robot_description`。
+
+## 八股自测
+
+Q：Gazebo 和 RViz 的区别是什么？
+A：Gazebo 是仿真器，负责模拟世界、机器人运动、传感器和碰撞；RViz 是可视化工具，负责订阅 ROS2 topic 和查询 tf 后把数据画出来。Gazebo 产生数据，RViz 展示数据。
+
+Q：`ros_gz_bridge` 为什么重要？
+A：Gazebo 和 ROS2 的通信系统不同。`ros_gz_bridge` 把 Gazebo 中的仿真数据转换成 ROS2 topic，也把 ROS2 的控制命令送进 Gazebo，是仿真和 ROS2 节点协作的桥。
+
+Q：为什么机器人不动时要查 `/cmd_vel`？
+A：`/cmd_vel` 是速度命令。如果没有 publisher，说明没有控制源；如果没有 subscriber，说明命令没人执行；如果类型不匹配或频率异常，Gazebo 或底盘控制器也可能无法正确接收。
+
+Q：为什么有 `/scan` 还要看频率？
+A：雷达数据需要持续更新。只有一条 `/scan` 消息不能支撑避障和 costmap 更新；频率太低会导致障碍物信息滞后，导航表现会变差。
+
+Q：`ros2 bag play` 后为什么没有画面？
+A：因为 bag play 只是重新发布 topic。画面需要 RViz、图像工具或其他订阅者来显示。没有订阅者时，消息仍然在发布，但用户不会直接看到可视化效果。
+
+Q：今天录的 bag 为什么没法单独显示完整 RobotModel？
+A：因为 bag 录了 `/cmd_vel`、`/odom`、`/scan`、`/tf`、`/tf_static`，但没有录 `/robot_description`。RViz 的 RobotModel 需要机器人模型描述，所以单独回放 bag 时可能只能显示 TF 和 LaserScan。
+
+## 明日衔接
+
+明天进入 Day 7：Nav2 第一次导航。今天已经确认仿真机器人能启动、能被键盘控制、能发布里程计和雷达数据，并且能录制 rosbag。下一步是在同一仿真基础上启动 Nav2，让机器人从手动遥控进入 RViz 目标点自主导航。
