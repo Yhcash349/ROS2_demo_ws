@@ -372,3 +372,52 @@
 - 当前 bag 没有录制 `/robot_description`，因此单独 `ros2 bag play` 时 RViz 可能只能显示 TF 和 LaserScan，完整 RobotModel 仍需要同时提供 `/robot_description` 或重新启动 `robot_state_publisher`。
 - 如果后续需要把 Day 6 证据长期保存，应将 `rosbag2_2026_06_22-21_27_14` 转移到计划内数据目录，或只在 `DOCS/RECORD.md` 中保留 `ros2 bag info` 摘要，避免大文件进入版本管理。
 - Day 7 将进入 Nav2 第一次导航，需要在今天 Gazebo/TurtleBot 能稳定运行的基础上启动 Nav2 bringup，并观察 AMCL、planner、controller、costmap 和 RViz 目标点导航效果。
+
+## 2026-06-23 Day 7：Nav2 第一次导航
+
+### 对应计划
+
+对应 `DOCS/PLAN.md` 的 Stage 2：仿真与导航基础，以及 Day 7：Nav2 第一次导航。今天目标是从 Day 6 的手动遥控 TurtleBot 进入 Nav2 自主到点：在 RViz 中设置初始位姿和目标点，观察 AMCL、costmap、路径规划、控制输出和 Gazebo 仿真机器人运动。
+
+### 今日完成
+
+- 启动 `nav2_bringup` TurtleBot3 仿真导航示例，进入 RViz + Gazebo + Nav2 联合验证流程。
+- 排查 RViz 左下角 `Startup` 灰色不可点的问题，确认 launch 中 lifecycle manager 已自动激活，后续重点应放在 AMCL 初始位姿和 tf 链路。
+- 排查终端持续提示 `Frame does not exist` 的问题，定位为 `map -> odom` 尚未由 AMCL 建立；通过 `2D Pose Estimate` 给 AMCL 初始位姿后，`Navigation` 和 `Localization` 均进入 `active`。
+- 使用 `tf2_echo odom base_footprint` 与 `tf2_echo map odom` 区分 Gazebo/里程计链路和 AMCL 定位链路：`odom -> base_footprint` 有输出说明仿真机器人位姿链路正常，`map -> odom` 起初缺失说明 AMCL 尚未初始化。
+- 排查 RViz `RobotModel` 的 URDF/mesh 加载错误，确认 `/opt/ros/jazzy/share/nav2_minimal_tb3_sim/urdf/turtlebot3_waffle.urdf` 中引用的 `package://nav2_minimal_tb3_sim/models/*.dae` 与实际安装位置 `models/turtlebot3_model/meshes/*.dae` 不一致。
+- 修复 `RobotModel` 资源路径问题后，继续通过 RViz `Nav2 Goal` 发送目标点，验证 Nav2 能从 RViz goal 生成路径并控制 Gazebo 中的仿真机器人导航到目标区域。
+- 结合今天现象明确 RViz、Gazebo、Nav2 的边界：RViz 负责发送目标和显示状态，Gazebo 负责仿真世界和机器人运动，Nav2 负责定位、建 costmap、规划路径并输出 `/cmd_vel` 速度命令。
+
+### 代码、结构与文件改动
+
+- 今日未新增或修改项目内 ROS2 package 代码。
+- 今日修复项发生在 ROS2 系统安装资源层：`nav2_minimal_tb3_sim` 的 TurtleBot3 mesh 资源路径需要与 URDF 引用匹配。该问题属于本机 ROS2 Jazzy 示例包资源路径不一致，不属于 `ROS2_demo_ws` 项目代码问题。
+- 本次总结更新 `DOCS/RECORD.md` 和 `DOCS/NOTE.md`，分别记录工程排查过程与学习理解。
+
+### 产物与证据
+
+- RViz 中 `Navigation: active`、`Localization: active`，说明 Nav2 navigation lifecycle 与 AMCL localization 均已激活。
+- RViz 中 `Global Status: Ok`，`base_footprint`、`base_link`、`base_scan`、camera 相关 frame 均显示 `Transform OK`。
+- 终端日志曾出现 `AMCL cannot publish a pose or update the transform. Please set the initial pose...`，对应初始位姿未设置阶段。
+- `tf2_echo odom base_footprint` 能输出连续的 Translation/Rotation，说明 Gazebo/odom 到机器人底盘的 tf 链路正常。
+- `tf2_echo map odom` 起初提示 `Invalid frame ID "map"`，说明 AMCL 尚未建立 `map -> odom`；完成 `2D Pose Estimate` 后 RViz localization 转为 active。
+- RobotModel 修复前 RViz 报错包括无法加载 `waffle_base.dae`、`lds.dae`、`r200.dae` 和 `tire.dae`。
+
+### 验证结果
+
+- 运行 `ros2 run tf2_ros tf2_echo odom base_footprint`，确认 `odom -> base_footprint` 链路可用。
+- 运行 `ros2 run tf2_ros tf2_echo map odom`，确认 `map -> odom` 的缺失与 AMCL 未初始化相关。
+- 使用 RViz `2D Pose Estimate` 设置机器人初始位姿后，Nav2 面板显示 `Localization: active`。
+- 修复 RobotModel mesh 资源路径后，RViz 中机器人模型可正常显示。
+- 使用 RViz `Nav2 Goal` 执行导航目标点验证，Nav2 能生成路径并驱动 Gazebo 仿真机器人移动。
+
+### Claude 审阅与采纳情况
+
+- 无。
+
+### 待办与风险
+
+- 后续建议保存 Day 7 的 RViz/Gazebo 截图或短视频，作为 3 次到点导航的正式证据。
+- Day 8 将进入 Nav2 架构与低风险参数调试，需要在今天的导航链路基础上阅读参数文件，并只修改 `max_vel_x`、`max_vel_theta`、`inflation_radius`、`xy_goal_tolerance` 等低风险参数。
+- 当前 RobotModel 修复涉及 `/opt/ros/jazzy` 下系统包资源路径；如果将来换机器或重装 ROS2，可能需要重新检查 `nav2_minimal_tb3_sim` 的 mesh 路径。
