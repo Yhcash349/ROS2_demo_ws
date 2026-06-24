@@ -421,3 +421,56 @@
 - 后续建议保存 Day 7 的 RViz/Gazebo 截图或短视频，作为 3 次到点导航的正式证据。
 - Day 8 将进入 Nav2 架构与低风险参数调试，需要在今天的导航链路基础上阅读参数文件，并只修改 `max_vel_x`、`max_vel_theta`、`inflation_radius`、`xy_goal_tolerance` 等低风险参数。
 - 当前 RobotModel 修复涉及 `/opt/ros/jazzy` 下系统包资源路径；如果将来换机器或重装 ROS2，可能需要重新检查 `nav2_minimal_tb3_sim` 的 mesh 路径。
+
+## 2026-06-24 Day 8：Nav2 架构与低风险参数调试
+
+### 对应计划
+
+对应 `DOCS/PLAN.md` 的 Stage 2：仿真与导航基础，以及 Day 8：Nav2 架构与低风险参数调试。今天目标是读取 Nav2 参数文件，理解 planner、controller、costmap、goal checker、BT navigator 和 lifecycle manager 的职责，并通过独立参数文件观察速度限制相关配置。
+
+### 今日完成
+
+- 从 ROS2 Jazzy 安装目录复制官方 Nav2 参数文件，建立项目内参数实验文件和原始基线备份。
+- 确认当前示例控制器为 MPPI Controller，当前版本的主要速度参数为 `FollowPath.vx_max`、`FollowPath.wz_max`，并确认 `velocity_smoother.max_velocity` 是输出端速度上限。
+- 理解并解释 `inflation_radius`、`xy_goal_tolerance`、`vx_max`、`wz_max` 和 `max_velocity` 对路径安全距离、到点判定和运动速度的影响。
+- 使用 `ros2 lifecycle nodes`、`ros2 lifecycle get` 和 `/navigate_to_pose` action 状态理解 Nav2 模块的配置、激活与失败传播关系。
+- 排查 RViz 地图不显示、Fixed Frame 与 RobotModel 多个 frame 同时报错的问题，确认多个红色 frame 通常是 `map` 或 `map -> odom` 上游链路缺失造成的连锁表现。
+- 进一步明确 RViz `2D Pose Estimate` 只负责给 AMCL 设置地图中的初始位置和朝向，不会移动机器人，也不是导航目标。
+- 排查自定义参数启动后 `controller_server` 崩溃、导航目标无响应的问题，定位为 `wz_max: 1` 被 YAML 解析为整数，与 MPPI Controller 需要的浮点参数类型不匹配；正确写法应保留小数点，例如 `wz_max: 1.0`。
+- 补充理解 Nav2 的框架与插件边界：Planner Server、Controller Server 是提供稳定接口和管理插件的运行平台，NavFn 和 MPPI 分别是当前加载的规划、控制算法插件；costmap layer、Goal Checker、Progress Checker 和恢复行为也可通过插件扩展。
+- 明确 Nav2 的价值不只在 lifecycle 管理，还包括模块通信接口、行为树任务组织、地图与代价地图处理、默认算法实现和插件扩展机制。算法可以替换，但必须满足接口、依赖、底盘模型、参数和传感器条件，并重新验证。
+
+### 代码、结构与文件改动
+
+- 新增 `src/blade_inspection_orbit_demo/config/nav2_params.yaml`，作为 Day 8 Nav2 参数实验文件。
+- 新增 `src/blade_inspection_orbit_demo/config/nav2_params_original.yaml`，保存复制时的官方参数基线。
+- 本次总结更新 `DOCS/RECORD.md` 和 `DOCS/NOTE.md`，分别记录工程事实、故障链和学习理解。
+- 当前参数实验文件相对基线的主要变化为：
+  - `FollowPath.vx_max`：`0.5 -> 1.0`
+  - `FollowPath.wz_max`：`1.9 -> 5.0`
+  - `velocity_smoother.max_velocity`：`[0.5, 0.0, 2.0] -> [1.0, 0.0, 4.0]`
+  - `velocity_smoother.min_velocity`：`[-0.5, 0.0, -2.0] -> [-1.0, 0.0, -4.0]`
+
+### 验证与排查结果
+
+- 使用 YAML 解析确认 `vx_max: 0.25` 会被解析为浮点数，而 `wz_max: 1` 会被解析为整数，验证了参数类型差异。
+- 使用差异检查确认导致 controller 异常的实验修改集中在 MPPI 和 velocity smoother 的速度参数区域，未发现 `inflation_radius` 或 `xy_goal_tolerance` 的实际改动。
+- 终端关键错误为：
+  - `Lifecycle node controller_server does not have error state implemented`
+  - `Failed to change state for node: controller_server`
+  - `Failed to bring up all requested nodes. Aborting bringup`
+  - `navigate_to_pose action server is not available`
+- 故障链为：YAML 参数类型不匹配 -> `controller_server` configure 失败并退出 -> navigation lifecycle bringup 中止 -> `/navigate_to_pose` action 不可用 -> RViz Nav2 Goal 无法触发导航。
+- 修正原则已确认：ROS2 浮点参数必须保留浮点写法，例如 `1.0`，不能随意写成整数 `1`。
+- 今日未完成对当前高速度实验值 `vx_max: 1.0`、`wz_max: 5.0` 的稳定性和安全性验证，因此不能将其视为推荐配置。
+
+### Claude 审阅与采纳情况
+
+- 无。
+
+### 待办与风险
+
+- 当前速度参数明显高于 TurtleBot 示例基线，下一次运行前建议恢复基线或改成低速实验值，并一次只修改一组参数。
+- 需要重新启动 Nav2，确认 `/map_server`、`/amcl`、`/planner_server`、`/controller_server` 和 `/bt_navigator` 均进入 `active [3]`。
+- 需要使用相同初始位姿和目标点完成基线与修改后对比，记录导航时间、速度、转向表现、路径变化和到点结果。
+- Day 8 计划中的 `inflation_radius`、`xy_goal_tolerance` 对比实验和 Nav2 模块图尚未形成正式证据，后续可补齐后再进入 Day 9。
