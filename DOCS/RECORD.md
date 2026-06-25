@@ -474,3 +474,217 @@
 - 需要重新启动 Nav2，确认 `/map_server`、`/amcl`、`/planner_server`、`/controller_server` 和 `/bt_navigator` 均进入 `active [3]`。
 - 需要使用相同初始位姿和目标点完成基线与修改后对比，记录导航时间、速度、转向表现、路径变化和到点结果。
 - Day 8 计划中的 `inflation_radius`、`xy_goal_tolerance` 对比实验和 Nav2 模块图尚未形成正式证据，后续可补齐后再进入 Day 9。
+
+## 2026-06-25 Day 9：SLAM 建图与静态地图导航
+
+### 对应计划
+
+对应 `DOCS/PLAN.md` 的 Stage 2：仿真与导航基础，以及 Day 9：SLAM 建图与静态地图导航。今天目标是使用 TurtleBot 的 `/scan`、`/odom` 和 tf 数据运行 SLAM，保存自建占据栅格地图，再以静态地图、AMCL 和 Nav2 重新建立定位导航链路。
+
+Day 7 验证的是在 Nav2 示例自带地图上定位和导航；Day 9 增加了“传感器数据 -> SLAM 建图 -> 保存地图 -> 重新加载地图”的工程步骤。今天不是在官方地图上继续编辑，而是对同一个 Gazebo 环境重新采集雷达和里程计数据，独立生成项目自己的地图。
+
+### 今日完成
+
+- 启动 TurtleBot3 Gazebo 仿真和 SLAM Toolbox，使用键盘控制机器人在环境中移动并建立占据栅格地图。
+- 使用 `map_saver_cli` 保存 Day 9 自建地图，形成 YAML 元数据与 PGM 栅格图文件。
+- 使用保存后的静态地图启动 `map_server` 和 AMCL，验证 `/map` 发布、初始位姿设置以及 `map -> base_footprint` tf 链路。
+- 将静态地图启动流程调整为 `autostart:=False`，再按“先 Localization、设置初始位姿、确认 tf、后 Navigation”的顺序手动管理 lifecycle，避免 Planner 在定位完成前激活。
+- 验证 localization manager 和 navigation manager 均曾返回 `success=True`。
+- 验证 `planner_server`、`bt_navigator`、`velocity_smoother` 和 `collision_monitor` 进入 `active [3]`，并确认 `/navigate_to_pose` 存在由 `/bt_navigator` 提供的 action server。
+- 明确 SLAM 建图模式与静态地图导航模式的区别：建图阶段由 SLAM Toolbox 生成 `map -> odom` 和 `/map`；静态导航阶段由 `map_server` 发布已有地图，由 AMCL 根据地图、雷达和里程计建立定位。
+
+### 代码、结构与文件改动
+
+- 新增 `src/blade_inspection_orbit_demo/maps/day9_tb3_map.yaml`。
+- 新增 `src/blade_inspection_orbit_demo/maps/day9_tb3_map.pgm`。
+- 地图 YAML 当前记录：
+  - `resolution: 0.050`
+  - `origin: [-0.951, -2.073, 0]`
+  - `mode: trinary`
+  - `occupied_thresh: 0.65`
+  - `free_thresh: 0.196`
+- 静态导航继续使用 `src/blade_inspection_orbit_demo/config/nav2_params_original.yaml`，避免 Day 8 尚未验证的高速度实验参数干扰 Day 9。
+- 本次总结更新 `DOCS/RECORD.md` 和 `DOCS/NOTE.md`，分别记录工程执行、故障链和学习理解。
+
+### 产物与验证证据
+
+- 地图文件已存在：
+  - `src/blade_inspection_orbit_demo/maps/day9_tb3_map.yaml`，约 134 B。
+  - `src/blade_inspection_orbit_demo/maps/day9_tb3_map.pgm`，约 12 KiB。
+- 静态地图启动后，`map_server` 能发布 `/map [nav_msgs/msg/OccupancyGrid]`，AMCL 和 global costmap 能订阅该地图。
+- `ros2 run tf2_ros tf2_echo map base_footprint` 启动瞬间曾提示 `Invalid frame ID "map"`，但随后持续输出 Translation、Rotation 和 Matrix，说明初始位姿生效后完整 tf 链已建立。启动瞬间的一次等待提示不能替代对后续持续输出的判断。
+- navigation manager 最终验证返回 `success=True`。
+- `/navigate_to_pose` 最终存在 1 个 action server，由 `/bt_navigator` 提供。
+- 当前没有形成“在自建地图上完成两个不同目标点导航”的明确日志或截图证据，因此该项不记为已完成。
+
+### 关键故障与处理记录
+
+#### 1. TurtleBot3 teleop 数值变化但机器人不动
+
+现象是 `turtlebot3_teleop` 终端持续显示线速度和角速度变化，但 Gazebo 中机器人没有反应。
+
+检查 ROS 图后发现，当前 Jazzy 仿真最终接收的是 `/cmd_vel [geometry_msgs/msg/Twist]`，而 Jazzy 的 `turtlebot3_teleop` 默认发布 `TwistStamped`。终端数值变化只能证明键盘节点收到了按键，不能证明消息类型和话题已经接入 Gazebo。
+
+处理方式是改用 `teleop_twist_keyboard`，发布非 stamped 的 `Twist`，并将输出 remap 到 Nav2 的输入链：
+
+```bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard \
+  --ros-args \
+  -p stamped:=false \
+  -r cmd_vel:=cmd_vel_nav
+```
+
+对应速度链路为：
+
+```text
+teleop -> /cmd_vel_nav -> velocity_smoother
+       -> /cmd_vel_smoothed -> collision_monitor
+       -> /cmd_vel -> ros_gz_bridge -> Gazebo
+```
+
+通用结论是：遥控终端显示速度不等于机器人收到速度；应使用 `ros2 topic info -v` 同时核对 topic 名、message type、publisher 和 subscriber。
+
+#### 2. 静态导航自动启动时 Planner 与 BT Navigator 未激活
+
+现象是 `/map_server`、`/amcl` 和 `/controller_server` 为 `active [3]`，但 `/planner_server`、`/bt_navigator` 为 `inactive [2]`，`/lifecycle_manager_navigation/is_active` 返回 `success=False`。
+
+日志中的关键错误为：
+
+```text
+Failed to change state for node: planner_server
+Failed to bring up all requested nodes. Aborting bringup.
+AMCL cannot publish a pose or update the transform. Please set the initial pose...
+```
+
+根因是 localization 与 navigation 同时自动启动时，AMCL 尚未收到初始位姿，`map -> odom -> base_link` 还没有建立。Planner 激活内部 global costmap 时等待全局 tf 超时，导致 navigation lifecycle 在中途终止。
+
+最终采用的稳定顺序是：
+
+```text
+autostart:=False
+-> 启动 lifecycle_manager_localization
+-> 在 RViz 设置 2D Pose Estimate
+-> 确认 map -> base_footprint 持续输出
+-> 启动 lifecycle_manager_navigation
+```
+
+通用结论是：静态地图存在不等于定位已经建立。Planner 的 global costmap 不仅需要 `/map`，还需要机器人能够通过 tf 转换到 `map` 坐标系。
+
+#### 3. 部分节点已 active 时再次执行 STARTUP 失败
+
+在第一次 navigation bringup 部分成功后，直接再次发送 `{command: 0}`，日志出现：
+
+```text
+controller_server:
+Unable to start transition 1 from current state active:
+Transition is not registered.
+```
+
+原因是 `STARTUP` 会从管理列表第一个节点重新执行 configure/activate，而 `controller_server` 已经处于 active，不能再次执行 configure transition。不能把 `STARTUP` 当成对失败节点的单独重试。
+
+曾尝试先执行 lifecycle `RESET` 再 `STARTUP`。RESET 返回成功，但随后组合节点容器 `component_container_isolated` 以 `exit code -6` 退出，因此该残缺 launch 被停止并重新启动。
+
+通用结论是：lifecycle manager 出现“部分节点 active、部分 inactive”时，优先重新启动整套 launch 并采用正确启动顺序，不要反复对同一残缺状态执行 STARTUP。
+
+#### 4. `autostart:=False` 后 RViz 没有地图
+
+现象是 Gazebo/RViz 已打开，但 RViz 中没有静态地图。
+
+原因是 `autostart:=False` 不仅阻止 Navigation 自动激活，也会让 `map_server` 和 AMCL 保持未激活；未激活的 `map_server` 不发布 `/map`。这不是地图文件损坏。
+
+处理方式是先调用 localization manager：
+
+```bash
+ros2 service call \
+  /lifecycle_manager_localization/manage_nodes \
+  nav2_msgs/srv/ManageLifecycleNodes \
+  "{command: 0}"
+```
+
+另外，`$PWD` 会随命令执行目录变化。若在 `~` 中运行，`map:=$PWD/src/...` 会展开到错误路径。因此后续静态地图与参数文件统一使用绝对路径，或先明确 `cd /home/yhc23/PROJECT/ROS2_demo_ws`。
+
+#### 5. 只有 Gazebo 窗口，没有看到 RViz
+
+`headless:=False` 只控制 Gazebo GUI，不控制 RViz；RViz 由 `use_rviz` 参数控制。日志确认 RViz 进程实际启动过，但 WSLg 下可能出现窗口被遮挡、窗口未正常呈现或随 launch 异常退出。
+
+为降低耦合，后续可使用 `use_rviz:=False` 启动 Gazebo/Nav2，再在独立终端启动：
+
+```bash
+ros2 launch nav2_bringup rviz_launch.py use_sim_time:=True
+```
+
+通用结论是：Gazebo GUI、RViz 和 Nav2 节点是三个不同部分。某一个窗口存在或缺失，不能直接判断另外两部分是否正常。
+
+#### 6. ROS2 CLI 完全无输出与 Fast DDS 共享内存冲突
+
+多次出现 `ros2 service call` 输入后完全没有 `waiting for service...` 输出，或报：
+
+```text
+[RTPS_TRANSPORT_SHM Error]
+Failed init_port fastrtps_port7005:
+open_and_lock_file failed
+```
+
+检查发现旧 `ros2-daemon` 长时间占用 `/dev/shm/fastrtps_port7005`，同时重复执行命令产生了多个卡住的 service call，ROS 图中还曾出现重复的 `/map_server`、`/nav2_container` 名称。
+
+处理过程是停止卡住的 CLI，停止无响应的旧 daemon，确认没有进程继续持有对应文件后，清理仅属于 `port7005` 的 stale Fast DDS 共享内存文件，再重新调用 lifecycle 服务。处理后 localization manager 和 navigation manager 均成功返回 `success=True`。
+
+通用结论是：CLI 完全没有输出时不要连续重复执行。应先 `Ctrl+C`，检查 `ps`、`ros2 daemon` 和 `/dev/shm/fastrtps_*`；清理时只能删除确认属于失效进程的共享内存文件，不能在正常 ROS2 进程仍占用时批量删除。
+
+#### 7. 多行 Shell 命令中的反斜杠后有空格
+
+曾输入：
+
+```bash
+ros2 service call \ 
+```
+
+反斜杠后存在空格时，它不再是有效的行续接符，可能导致命令被错误拆分。正确规则是 `\` 必须是该行最后一个字符。关键 lifecycle 命令也可以写成单行，减少复制时的空格错误。
+
+### 当前推荐的静态导航启动顺序
+
+启动主进程时使用绝对路径和 `autostart:=False`：
+
+```bash
+ros2 launch nav2_bringup tb3_simulation_launch.py \
+  slam:=False \
+  headless:=False \
+  autostart:=False \
+  map:=/home/yhc23/PROJECT/ROS2_demo_ws/src/blade_inspection_orbit_demo/maps/day9_tb3_map.yaml \
+  params_file:=/home/yhc23/PROJECT/ROS2_demo_ws/src/blade_inspection_orbit_demo/config/nav2_params_original.yaml
+```
+
+随后依次执行：
+
+```bash
+ros2 service call /lifecycle_manager_localization/manage_nodes \
+  nav2_msgs/srv/ManageLifecycleNodes "{command: 0}"
+```
+
+在 RViz 设置 `2D Pose Estimate`，确认 `map -> base_footprint` 后执行：
+
+```bash
+ros2 service call /lifecycle_manager_navigation/manage_nodes \
+  nav2_msgs/srv/ManageLifecycleNodes "{command: 0}"
+```
+
+最后检查：
+
+```bash
+ros2 service call /lifecycle_manager_navigation/is_active \
+  std_srvs/srv/Trigger '{}'
+```
+
+预期返回 `success=True`。
+
+### Claude 审阅与采纳情况
+
+- 无。
+
+### 待办与风险
+
+- 仍需在自建地图上完成至少两个不同目标点的导航，并保存 RViz 路径截图或短视频，满足 Day 9 原计划的正式验收标准。
+- 需要记录自建地图的实际质量问题，例如墙体断裂、空洞、重影或定位漂移；当前只有地图文件，没有形成地图质量对比说明。
+- Fast DDS 共享内存冲突可能在异常终止 ROS2 进程后复现。后续优先正常关闭 launch 和 CLI，避免反复强制结束进程。
+- 当前验证使用 `nav2_params_original.yaml`。Day 8 的高速度实验参数仍未完成稳定性验证，不应切回静态导航主流程。
+- 下一步进入 Day 10 前，应先补齐两次目标点导航证据；Day 10 才开始使用 Simple Commander 通过 Python 自动发送单目标。
