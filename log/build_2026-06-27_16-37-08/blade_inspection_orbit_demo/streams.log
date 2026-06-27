@@ -1,0 +1,43 @@
+[1.509s] Invoking command in '/home/yhc23/PROJECT/ROS2_demo_ws/src/blade_inspection_orbit_demo': PYTHONPATH=/home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/blade_inspection_orbit_demo build --build-base /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build install --record /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/install.log --single-version-externally-managed install_data
+[1.811s] running egg_info
+[1.811s] creating ../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info
+[1.835s] writing ../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/PKG-INFO
+[1.836s] writing dependency_links to ../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/dependency_links.txt
+[1.836s] writing entry points to ../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/entry_points.txt
+[1.836s] writing requirements to ../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/requires.txt
+[1.836s] writing top-level names to ../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/top_level.txt
+[1.837s] writing manifest file '../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/SOURCES.txt'
+[1.884s] reading manifest file '../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/SOURCES.txt'
+[1.885s] writing manifest file '../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/SOURCES.txt'
+[1.885s] running build
+[1.885s] running build_py
+[1.886s] creating /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build
+[1.886s] creating /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build/lib
+[1.886s] creating /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build/lib/blade_inspection_orbit_demo
+[1.887s] copying blade_inspection_orbit_demo/__init__.py -> /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build/lib/blade_inspection_orbit_demo
+[1.888s] copying blade_inspection_orbit_demo/go_to_pose_demo.py -> /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build/lib/blade_inspection_orbit_demo
+[1.888s] running install
+[1.894s] running install_lib
+[1.919s] creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/python3.12/site-packages/blade_inspection_orbit_demo
+[1.919s] copying /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build/lib/blade_inspection_orbit_demo/__init__.py -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/python3.12/site-packages/blade_inspection_orbit_demo
+[1.919s] copying /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build/lib/blade_inspection_orbit_demo/go_to_pose_demo.py -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/python3.12/site-packages/blade_inspection_orbit_demo
+[1.920s] byte-compiling /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/python3.12/site-packages/blade_inspection_orbit_demo/__init__.py to __init__.cpython-312.pyc
+[1.921s] byte-compiling /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/python3.12/site-packages/blade_inspection_orbit_demo/go_to_pose_demo.py to go_to_pose_demo.cpython-312.pyc
+[1.922s] running install_data
+[1.922s] creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/ament_index
+[1.923s] creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/ament_index/resource_index
+[1.924s] creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/ament_index/resource_index/packages
+[1.924s] copying resource/blade_inspection_orbit_demo -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/ament_index/resource_index/packages
+[1.925s] copying package.xml -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/blade_inspection_orbit_demo
+[1.925s] creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/blade_inspection_orbit_demo/config
+[1.925s] copying config/nav2_params.yaml -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/blade_inspection_orbit_demo/config
+[1.926s] copying config/nav2_params_original.yaml -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/blade_inspection_orbit_demo/config
+[1.927s] creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/blade_inspection_orbit_demo/maps
+[1.928s] copying maps/day9_tb3_map.pgm -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/blade_inspection_orbit_demo/maps
+[1.929s] copying maps/day9_tb3_map.yaml -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/blade_inspection_orbit_demo/maps
+[1.929s] running install_egg_info
+[1.956s] Copying ../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info to /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/python3.12/site-packages/blade_inspection_orbit_demo-0.0.0-py3.12.egg-info
+[1.959s] running install_scripts
+[2.132s] Installing go_to_pose_demo script to /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/blade_inspection_orbit_demo
+[2.133s] writing list of installed files to '/home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/install.log'
+[2.185s] Invoked command in '/home/yhc23/PROJECT/ROS2_demo_ws/src/blade_inspection_orbit_demo' returned '0': PYTHONPATH=/home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/blade_inspection_orbit_demo build --build-base /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build install --record /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/install.log --single-version-externally-managed install_data

@@ -1085,3 +1085,183 @@ A：以后续持续输出为准。第一行可能只是 listener 刚启动时尚
 ## 明日衔接
 
 进入 Day 10 前，应先在自建地图上补齐两个不同目标点的静态导航证据，并记录地图质量问题。Day 10 将不再依赖 RViz 手动点击目标，而是使用 Nav2 Simple Commander 和 `BasicNavigator` 通过 Python 自动发送单目标。
+
+# 2026-06-27 Day 10：Simple Commander 单目标控制
+
+## 今日学习位置
+
+今天对应 `DOCS/PLAN.md` 的 Stage 3：自动航点与数据采集，以及 Day 10：Simple Commander 单目标控制。Day 7 和 Day 9 主要是通过 RViz 手动设置初始位姿和目标点，今天开始用 Python 脚本替代这两个手动动作。
+
+今天最重要的认识是：**Day 10 的脚本不自己实现导航算法，它只是把 initial pose 和 goal pose 发送给 Nav2，并读取 Nav2 action 的 feedback 与 result。真正负责定位、规划、控制和恢复行为的是 Nav2。**
+
+## `BasicNavigator` 在今天做什么
+
+`BasicNavigator` 是 Nav2 Simple Commander 提供的 Python 封装。它让脚本可以用函数调用的方式和 Nav2 交互，而不是手动在 RViz 中点击按钮。
+
+今天脚本里的关键调用可以这样对应：
+
+```text
+navigator.setInitialPose(initial_pose)
+  -> 替代 RViz 的 2D Pose Estimate
+
+navigator.waitUntilNav2Active()
+  -> 等 AMCL 和 BT Navigator 等 Nav2 lifecycle 节点可用
+
+navigator.goToPose(goal_pose)
+  -> 替代 RViz 的 Nav2 Goal
+
+navigator.getFeedback()
+  -> 读取剩余距离、导航时间、预计剩余时间、恢复次数
+
+navigator.getResult()
+  -> 判断 succeeded、failed、canceled 或 unknown
+```
+
+所以今天的脚本主线是：
+
+```text
+设置初始位姿
+-> 等 Nav2 ready
+-> 发送单个目标点
+-> 读取过程反馈
+-> 超时可取消
+-> 输出最终结果
+```
+
+## `PoseStamped`、yaw 和四元数
+
+Nav2 的目标点不是普通的 `x, y` 数字，而是 `PoseStamped`。它包含两层含义：
+
+```text
+header:
+  frame_id: 这个位姿属于哪个坐标系，今天默认是 map
+  stamp: 这个位姿是什么时间生成的
+
+pose:
+  position: x, y, z
+  orientation: x, y, z, w
+```
+
+`pose.header.stamp = clock.now().to_msg()` 是给目标位姿打上当前 ROS 时间，便于 Nav2 和 tf2 判断这个位姿与当前坐标变换是否属于同一个时间体系。
+
+平面机器人只关心 yaw，也就是绕 z 轴旋转。但 ROS 的朝向字段使用四元数，所以脚本中将 yaw 转为：
+
+```text
+z = sin(yaw / 2)
+w = cos(yaw / 2)
+```
+
+这里使用半角是四元数表示旋转的数学定义，不是任意缩小角度。由于当前没有 roll 和 pitch，`x` 与 `y` 分量保持默认 0 即可。
+
+## Nav2 lifecycle 的作用
+
+Nav2 里很多节点不是进程启动后立刻可用，而是 lifecycle 节点，需要从 `unconfigured`、`inactive` 进入 `active`。只有 `active [3]` 才表示节点真正工作。
+
+今天涉及的核心节点可以这样理解：
+
+```text
+map_server:
+  加载 day9_tb3_map.yaml / day9_tb3_map.pgm，发布 /map
+
+amcl:
+  使用 /map、/scan、/odom 和 tf 估计机器人在地图中的位置
+
+planner_server:
+  根据当前位置和目标点规划全局路径
+
+controller_server:
+  跟踪路径并发布 /cmd_vel，让机器人运动
+
+bt_navigator:
+  提供 /navigate_to_pose action server，是导航任务的总调度节点
+```
+
+`nav2_bringup` 的作用是把这些 Nav2 节点和相关配置一起启动；`lifecycle_manager_localization` 负责激活定位相关节点；`lifecycle_manager_navigation` 负责激活导航执行相关节点。
+
+如果 `/navigate_to_pose` 只有 action clients、没有 action server，说明 RViz 或脚本在等着发目标，但没有 `/bt_navigator` 接收目标。这时问题不在目标点，而在 navigation 栈没有 active。
+
+## 为什么第一次不需要手动点 `2D Pose Estimate`
+
+第一次从起点运行时，脚本默认发布：
+
+```text
+initial pose = x=0.0, y=0.0, yaw=0.0
+```
+
+这等价于自动做了一次 RViz 的 `2D Pose Estimate`。如果机器人真实位置本来就在地图起点附近，AMCL 能根据这个初始猜测和雷达数据匹配地图，随后 Nav2 就能 ready。
+
+问题出现在机器人已经移动后再次运行脚本。当前脚本每次都会重新执行 `setInitialPose()`，如果不传新的 `--initial-x`、`--initial-y`、`--initial-yaw`，它仍然会告诉 AMCL：
+
+```text
+机器人现在在 (0.0, 0.0, 0.0)
+```
+
+这会覆盖 AMCL 当前定位估计，导致 RViz 中机器人模型、local costmap、LaserScan 与静态地图出现错位。这个现象不是 Gazebo 机器人真的瞬移，而是 `map -> odom` 定位关系被重新调整后，RViz 按新的 tf 关系重新显示数据。
+
+## 目标点是绝对坐标，不是相对指令
+
+今天脚本中的：
+
+```bash
+--goal-x 0.5
+--goal-y 0.8
+--goal-yaw 1.57
+```
+
+表示的是：
+
+```text
+去 map 坐标系里的 x=0.5, y=0.8，最终朝向 1.57 弧度
+```
+
+它不是“从当前位置向左走 0.8 米”，也不是“在上一段导航基础上继续转弯”。因此，连续运行脚本时，必须区分：
+
+```text
+goal pose:
+  目标点在 map 中的绝对位置
+
+initial pose:
+  AMCL 对机器人当前位姿的初始估计
+```
+
+后续 Day 11 多航点脚本应该只在任务开始时设置一次 initial pose，然后连续发送多个目标点，而不是每个目标点都重置 AMCL。
+
+## RViz 中紫色区域和红色点的含义
+
+机器人附近紫色、粉色、青色的一片区域主要是 Nav2 costmap 或障碍物膨胀代价区域。它不是机器人本体，而是 Nav2 给 controller 使用的风险地图：离障碍物越近，代价越高，机器人越不应该从那里走。
+
+红色点状或线状的框通常是 `/scan` 激光雷达当前观测。正常情况下，红色 scan 点应该大致贴合静态地图中的墙体或障碍物边缘。如果 red scan 与地图边缘明显错位，通常说明 AMCL 定位不准或 initial pose 设置错误。
+
+可以用一句话判断：
+
+```text
+/scan 和地图贴合
+  -> 定位大概率正常
+
+/scan 和地图整体错开或旋转
+  -> AMCL 定位有问题，不应继续发导航目标
+```
+
+## 八股自测
+
+Q：今天的脚本有没有自己实现路径规划？
+A：没有。脚本只负责向 Nav2 发送 initial pose 和 goal pose，并读取 feedback/result。路径规划由 `planner_server` 完成，路径跟踪由 `controller_server` 完成。
+
+Q：`setInitialPose()` 和 `goToPose()` 分别对应 RViz 的什么操作？
+A：`setInitialPose()` 对应 `2D Pose Estimate`，用于告诉 AMCL 机器人当前大概在哪里；`goToPose()` 对应 `Nav2 Goal`，用于告诉 Nav2 要去哪里。
+
+Q：为什么重复运行脚本会导致 RViz 中机器人跳回起点？
+A：因为当前脚本每次都会发布默认 initial pose `(0.0, 0.0, 0.0)`。机器人移动后再次发布这个初始位姿，会重置 AMCL 对机器人位置的估计。
+
+Q：`--goal-x 0.5 --goal-y 0.8` 是相对当前位置吗？
+A：不是。它是 `map` 坐标系下的绝对目标点。
+
+Q：`/navigate_to_pose` 只有 clients、没有 servers 说明什么？
+A：说明 RViz 或脚本准备发目标，但没有 `bt_navigator` action server 接收目标，通常是 navigation lifecycle 没有 active。
+
+Q：RViz 中红色 LaserScan 和地图边缘错位意味着什么？
+A：通常意味着 AMCL 定位不准，可能是 initial pose 设置错误或 tf 关系被重新调整。应先重新设置 `2D Pose Estimate`，让 scan 与地图贴合。
+
+## 明日衔接
+
+下一步可以先给 `go_to_pose_demo.py` 增加 `--skip-initial-pose` 参数，避免在 AMCL 已经定位正常时重复重置初始位姿。随后进入 Day 11 时，应将单目标脚本扩展为多航点流程：只在任务开始时设置一次 initial pose，然后按顺序发送多个 `PoseStamped` 目标点。

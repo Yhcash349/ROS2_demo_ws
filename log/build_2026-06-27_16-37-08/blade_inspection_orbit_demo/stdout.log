@@ -1,0 +1,41 @@
+running egg_info
+creating ../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info
+writing ../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/PKG-INFO
+writing dependency_links to ../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/dependency_links.txt
+writing entry points to ../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/entry_points.txt
+writing requirements to ../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/requires.txt
+writing top-level names to ../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/top_level.txt
+writing manifest file '../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/SOURCES.txt'
+reading manifest file '../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/SOURCES.txt'
+writing manifest file '../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build
+creating /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build/lib
+creating /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build/lib/blade_inspection_orbit_demo
+copying blade_inspection_orbit_demo/__init__.py -> /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build/lib/blade_inspection_orbit_demo
+copying blade_inspection_orbit_demo/go_to_pose_demo.py -> /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build/lib/blade_inspection_orbit_demo
+running install
+running install_lib
+creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/python3.12/site-packages/blade_inspection_orbit_demo
+copying /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build/lib/blade_inspection_orbit_demo/__init__.py -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/python3.12/site-packages/blade_inspection_orbit_demo
+copying /home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/build/lib/blade_inspection_orbit_demo/go_to_pose_demo.py -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/python3.12/site-packages/blade_inspection_orbit_demo
+byte-compiling /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/python3.12/site-packages/blade_inspection_orbit_demo/__init__.py to __init__.cpython-312.pyc
+byte-compiling /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/python3.12/site-packages/blade_inspection_orbit_demo/go_to_pose_demo.py to go_to_pose_demo.cpython-312.pyc
+running install_data
+creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/ament_index
+creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/ament_index/resource_index
+creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/ament_index/resource_index/packages
+copying resource/blade_inspection_orbit_demo -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/ament_index/resource_index/packages
+copying package.xml -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/blade_inspection_orbit_demo
+creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/blade_inspection_orbit_demo/config
+copying config/nav2_params.yaml -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/blade_inspection_orbit_demo/config
+copying config/nav2_params_original.yaml -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/blade_inspection_orbit_demo/config
+creating /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/blade_inspection_orbit_demo/maps
+copying maps/day9_tb3_map.pgm -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/blade_inspection_orbit_demo/maps
+copying maps/day9_tb3_map.yaml -> /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/share/blade_inspection_orbit_demo/maps
+running install_egg_info
+Copying ../../build/blade_inspection_orbit_demo/blade_inspection_orbit_demo.egg-info to /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/python3.12/site-packages/blade_inspection_orbit_demo-0.0.0-py3.12.egg-info
+running install_scripts
+Installing go_to_pose_demo script to /home/yhc23/PROJECT/ROS2_demo_ws/install/blade_inspection_orbit_demo/lib/blade_inspection_orbit_demo
+writing list of installed files to '/home/yhc23/PROJECT/ROS2_demo_ws/build/blade_inspection_orbit_demo/install.log'

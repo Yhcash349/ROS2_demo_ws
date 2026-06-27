@@ -1,0 +1,2 @@
+[console_scripts]
+go_to_pose_demo = blade_inspection_orbit_demo.go_to_pose_demo:main

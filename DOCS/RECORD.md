@@ -688,3 +688,97 @@ ros2 service call /lifecycle_manager_navigation/is_active \
 - Fast DDS 共享内存冲突可能在异常终止 ROS2 进程后复现。后续优先正常关闭 launch 和 CLI，避免反复强制结束进程。
 - 当前验证使用 `nav2_params_original.yaml`。Day 8 的高速度实验参数仍未完成稳定性验证，不应切回静态导航主流程。
 - 下一步进入 Day 10 前，应先补齐两次目标点导航证据；Day 10 才开始使用 Simple Commander 通过 Python 自动发送单目标。
+
+## 2026-06-27 Day 10：Simple Commander 单目标控制
+
+### 对应计划位置
+
+对应 `DOCS/PLAN.md` 的 Stage 3：自动航点与数据采集，以及 Day 10：Simple Commander 单目标控制。今天目标是把 RViz 手动点击 `Nav2 Goal` 的流程，替换为 Python 脚本通过 Nav2 Simple Commander 自动发送单个目标点，并读取导航反馈和最终结果。
+
+### 代码、结构与文件改动
+
+- 将 `src/blade_inspection_orbit_demo/` 补齐为可构建的 `ament_python` 包。
+- 新增 `src/blade_inspection_orbit_demo/package.xml`，声明 `rclpy`、`geometry_msgs`、`nav2_simple_commander` 依赖。
+- 新增 `src/blade_inspection_orbit_demo/setup.py` 和 `setup.cfg`，注册 `go_to_pose_demo` 控制台入口，并安装 `config/*.yaml` 与 `maps/*`。
+- 新增 `src/blade_inspection_orbit_demo/resource/blade_inspection_orbit_demo`。
+- 新增 `src/blade_inspection_orbit_demo/blade_inspection_orbit_demo/__init__.py`。
+- 新增 `src/blade_inspection_orbit_demo/blade_inspection_orbit_demo/go_to_pose_demo.py`，实现 Day 10 单目标导航 demo。
+
+### 验证结果
+
+已完成基础构建和入口验证：
+
+```bash
+python3 -m py_compile src/blade_inspection_orbit_demo/blade_inspection_orbit_demo/go_to_pose_demo.py
+source /opt/ros/jazzy/setup.bash
+colcon build --packages-select blade_inspection_orbit_demo
+source install/setup.bash
+ros2 pkg executables blade_inspection_orbit_demo
+ros2 run blade_inspection_orbit_demo go_to_pose_demo --help
+```
+
+结果确认：
+
+```text
+Summary: 1 package finished
+blade_inspection_orbit_demo go_to_pose_demo
+```
+
+实机仿真运行中，使用默认命令：
+
+```bash
+ros2 run blade_inspection_orbit_demo go_to_pose_demo
+```
+
+脚本完成了 initial pose 发布、等待 Nav2 active、发送目标点和读取 feedback，日志显示默认目标点为 `x=1.0, y=0.0`，最终结果为：
+
+```text
+Navigation result: succeeded
+```
+
+随后使用自定义目标点：
+
+```bash
+ros2 run blade_inspection_orbit_demo go_to_pose_demo \
+  --goal-x 0.5 \
+  --goal-y 0.8 \
+  --goal-yaw 1.57
+```
+
+也曾完成一次导航，日志显示剩余距离逐步下降并返回：
+
+```text
+Navigation result: succeeded
+```
+
+### 今日排查与结论
+
+1. `go_to_pose_demo.py` 每次运行都会执行 `navigator.setInitialPose(initial_pose)`。当不显式传入 `--initial-x`、`--initial-y`、`--initial-yaw` 时，默认 initial pose 为 `(0.0, 0.0, 0.0)`。
+2. 第一次从起点运行时，默认 initial pose 与机器人真实位置接近，因此脚本可以替代 RViz 的 `2D Pose Estimate`，AMCL 能建立定位，Nav2 能执行默认目标点。
+3. 机器人已经移动后再次运行脚本，如果仍使用默认 initial pose，会把 AMCL 定位估计重新拉回 `(0.0, 0.0, 0.0)`，导致 RViz 中机器人、local costmap、LaserScan 与静态地图出现错位。
+4. `--goal-x`、`--goal-y`、`--goal-yaw` 定义的是 `map` 坐标系下的绝对目标点，不是相对当前位置的“向左走”或“向前走”指令。
+5. 当脚本停在 `Waiting for Nav2 to become active...` 时，卡点在 `navigator.waitUntilNav2Active()`，通常需要检查 `/amcl_pose` 是否有输出、`/bt_navigator` 是否 active，以及 `/navigate_to_pose` 是否存在 action server。
+6. RViz 中机器人附近的紫色区域主要是 Nav2 costmap 或障碍物膨胀代价区域；红色点状边框主要是 `/scan` LaserScan 观测。红色 scan 与地图边缘不贴合时，通常说明 AMCL 定位错位。
+
+### 当前推荐使用方式
+
+单次从起点验证 Day 10 demo 时，可直接使用：
+
+```bash
+ros2 run blade_inspection_orbit_demo go_to_pose_demo
+```
+
+如果机器人已经移动过，不建议继续用默认 initial pose 重复运行。应先在 RViz 用 `2D Pose Estimate` 重新校正定位，或运行脚本时显式传入当前机器人在 `map` 中的 initial pose。
+
+连续执行多个目标点时，当前 `go_to_pose_demo.py` 不是最佳形态。后续 Day 11 多航点脚本应只在任务开始时设置一次 initial pose，之后连续发送多个目标点，不应每个目标都重置 AMCL 初始位姿。
+
+### Claude 审阅与采纳情况
+
+- 无。
+
+### 待办与风险
+
+- 当前 Day 10 已跑通单目标自动导航，但还缺少正式截图、短视频或完整终端日志归档。
+- Day 9 原计划中的两个不同目标点静态导航证据和地图质量记录仍需补齐，不能因为 Day 10 脚本成功而混淆阶段验收。
+- 建议下一步给 `go_to_pose_demo.py` 增加 `--skip-initial-pose` 参数，便于在 AMCL 已经定位正常时直接发送目标点，避免重复重置 initial pose。
+- Day 11 多航点实现应把“设置 initial pose”和“发送 waypoint”拆开，避免连续任务中的定位跳变。
